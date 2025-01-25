@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Berkut Workflow Organizer</title>
+    <link rel="stylesheet" href="themes.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+        #container {
+            display: flex;
+            flex: 1;
+        }
+        #sidebar {
+            width: 250px;
+            background: #2e3440;
+            color: #d8dee9;
+            padding: 10px;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.2);
+        }
+        #main-panel {
+            flex: 1;
+            padding: 20px;
+            background: #eceff4;
+            display: flex;
+            flex-direction: column;
+        }
+        #editor {
+            flex: 1;
+            display: none;
+            flex-direction: column;
+            background: #eceff4;
+            color: #2e3440;
+            padding: 20px;
+        }
+        textarea {
+            flex: 1;
+            font-size: 16px;
+            font-family: 'Courier New', Courier, monospace;
+            background: #d8dee9;
+            color: #2e3440;
+            border: 1px solid #4c566a;
+            border-radius: 5px;
+            padding: 10px;
+            box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.1);
+            margin: 5px;
+            resize: none;
+            outline: none;
+        }
+        button {
+            margin: 5px;
+            padding: 5px 10px;
+            background-color: #4c566a;
+            color: #eceff4;
+            border: none;
+            cursor: pointer;
+            border-radius: 3px;
+        }
+        button:hover {
+            background-color: #5e81ac;
+        }
+        #footer {
+            background: #2e3440;
+            color: #d8dee9;
+            padding: 10px;
+            text-align: left;
+            display: flex;
+            justify-content: flex-start;
+            align-items: center;
+        }
+        #footer .settings-button {
+            margin-left: 10px;
+        }
+        .icon {
+            font-size: 16px;
+        }
+        .toolbar {
+            display: flex;
+            justify-content: flex-start;
+            margin-bottom: 10px;
+        }
+        .toolbar button {
+            margin-right: 10px;
+            padding: 5px;
+            font-size: 16px;
+            border: none;
+            cursor: pointer;
+            background: #4c566a;
+            color: #eceff4;
+            border-radius: 3px;
+        }
+        .toolbar button:hover {
+            background: #5e81ac;
+        }
+        #footer {
+            background: #2e3440;
+            color: #d8dee9;
+            padding: 10px;
+            display: flex;
+            justify-content: flex-start;
+        }
+        #modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #eceff4;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            display: none;
+            z-index: 1000;
+        }
+        #modal.active {
+            display: block;
+        }
+        .tile {
+            background: #d8dee9;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+        }
+        .tile:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+        }
+        .tile h3 {
+            margin: 0;
+            font-size: 18px;
+            color: #2e3440;
+        }
+        .tile p {
+            margin: 10px 0 0;
+            font-size: 14px;
+            color: #4c566a;
+        }
+        .tile-container {
+            display: flex;
+            flex-wrap: wrap;
+            max-width: 800px; 
+        }
+        .tile-container .tile {
+            flex: 1 1 calc(33.333% - 20px);
+            max-width: calc(33.333% - 20px);
+        }
+        #versions-modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #eceff4;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            display: none;
+            z-index: 1000;
+            width: 400px;
+            max-width: 90%;
+            border-radius: 10px;
+        }
+        #versions-modal.active {
+            display: block;
+        }
+        #versions-modal h2 {
+            margin-top: 0;
+            color: #2e3440;
+        }
+        #versions-list {
+            max-height: 300px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+        }
+        .version-item {
+            background: #d8dee9;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .version-item p {
+            margin: 0;
+            color: #2e3440;
+        }
+        .version-item small {
+            display: block;
+            margin-top: 5px;
+            color: #4c566a;
+        }
+        #rename-modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #eceff4;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            display: none; 
+            z-index: 1000;
+            width: 400px;
+            max-width: 90%;
+            border-radius: 10px;
+        }
+        #rename-modal.active {
+            display: block; 
+        }
+        #rename-modal h2 {
+            margin-top: 0;
+            color: #2e3440;
+        }
+        #rename-confirm, #rename-cancel {
+            margin-right: 10px;
+        }
+        #rename-input {
+            width: 90%; 
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #4c566a; 
+            border-radius: 5px;
+            outline: none;
+        }
+
+        .editable-title {
+            cursor: pointer;
+        }
+        .editable-title input {
+            width: 80%; 
+            padding: 5px;
+            border: 1px solid #4c566a; 
+            border-radius: 3px;
+            outline: none;
+        }
+        #alert-modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #eceff4;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            display: none;
+            z-index: 1000;
+            width: 300px;
+            max-width: 90%;
+            border-radius: 10px;
+            text-align: center;
+        }
+        #alert-modal.active {
+            display: block;
+        }
+        #alert-modal h2 {
+            margin-top: 0;
+            color: #2e3440;
+        }
+        #alert-modal button {
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body class="light-theme">
+    <div id="title-bar">
+        <div id="title">Berkut Workflow Organizer</div>
+        <div id="window-controls">
+            <div class="window-control minimize"></div>
+            <div class="window-control maximize"></div>
+            <div class="window-control close"></div>
+        </div>
+    </div>
+    
+    <div id="content-wrapper">
+        <div id="container">
+        <div id="sidebar">
+            <button id="main-button">
+                <span class="folderContainer">
+                    <!-- Задний фон (папка) -->
+                    <svg class="fileBack" width="160" height="120" viewBox="0 0 160 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M0 10C0 4.47715 4.47715 0 10 0H50C51.8285 0 53.2056 0.627965 54.1553 1.72142L64.3303 13.4371C65.2799 14.5306 66.657 15.1585 68.1053 15.1585H150C155.523 15.1585 160 19.6356 160 25.1585V110C160 115.523 155.523 120 150 120H10C4.47715 120 0 115.523 0 110V10Z" fill="url(#paint0_linear_home_back)"></path>
+                        <defs>
+                            <linearGradient id="paint0_linear_home_back" x1="0" y1="0" x2="80" y2="120" gradientUnits="userSpaceOnUse">
+                                <stop stop-color="#8F88C2"></stop>
+                                <stop offset="1" stop-color="#5C52A2"></stop>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                    <!-- Передняя часть (дом) -->
+                    <svg class="fileFront" width="160" height="120" viewBox="0 0 160 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M80 20L20 60V100H140V60L80 20Z" fill="url(#paint0_linear_home_front)"/>
+                        <rect x="70" y="60" width="20" height="20" rx="5" fill="white"/>
+                        <defs>
+                            <linearGradient id="paint0_linear_home_front" x1="80" y1="20" x2="80" y2="100" gradientUnits="userSpaceOnUse">
+                                <stop stop-color="#C3BBFF"></stop>
+                                <stop offset="1" stop-color="#51469A"></stop>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                </span>
+                <p class="text">Главная</p>
+            </button>
+            <button id="notes-button">
+                <span class="folderContainer">
+                    <!-- Повторяем SVG для иконки заметок -->
+                    <svg class="fileBack" width="146" height="113" viewBox="0 0 146 113" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M0 4C0 1.79086 1.79086 0 4 0H50.3802C51.8285 0 53.2056 0.627965 54.1553 1.72142L64.3303 13.4371C65.2799 14.5306 66.657 15.1585 68.1053 15.1585H141.509C143.718 15.1585 145.509 16.9494 145.509 19.1585V109C145.509 111.209 143.718 113 141.509 113H3.99999C1.79085 113 0 111.209 0 109V4Z" fill="url(#paint0_linear_117_4)"></path>
+                        <defs>
+                            <linearGradient id="paint0_linear_117_4" x1="0" y1="0" x2="72.93" y2="95.4804" gradientUnits="userSpaceOnUse">
+                                <stop stop-color="#8F88C2"></stop>
+                                <stop offset="1" stop-color="#5C52A2"></stop>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                    <svg class="filePage" width="88" height="99" viewBox="0 0 88 99" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect width="88" height="99" fill="url(#paint0_linear_117_6)"></rect>
+                        <defs>
+                            <linearGradient id="paint0_linear_117_6" x1="0" y1="0" x2="81" y2="160.5" gradientUnits="userSpaceOnUse">
+                                <stop stop-color="white"></stop>
+                                <stop offset="1" stop-color="#686868"></stop>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                    <svg class="fileFront" width="160" height="79" viewBox="0 0 160 79" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M0.29306 12.2478C0.133905 9.38186 2.41499 6.97059 5.28537 6.97059H30.419H58.1902C59.5751 6.97059 60.9288 6.55982 62.0802 5.79025L68.977 1.18034C70.1283 0.410771 71.482 0 72.8669 0H77H155.462C157.87 0 159.733 2.1129 159.43 4.50232L150.443 75.5023C150.19 77.5013 148.489 79 146.474 79H7.78403C5.66106 79 3.9079 77.3415 3.79019 75.2218L0.29306 12.2478Z" fill="url(#paint0_linear_117_5)"></path>
+                        <defs>
+                            <linearGradient id="paint0_linear_117_5" x1="38.7619" y1="8.71323" x2="66.9106" y2="82.8317" gradientUnits="userSpaceOnUse">
+                                <stop stop-color="#C3BBFF"></stop>
+                                <stop offset="1" stop-color="#51469A"></stop>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                </span>
+                <p class="text">Заметки</p>
+                <button id="tasks-button">
+                    <span class="folderContainer">
+                        <!-- Задний фон (папка) -->
+                        <svg class="fileBack" width="160" height="120" viewBox="0 0 160 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M0 10C0 4.47715 4.47715 0 10 0H50C51.8285 0 53.2056 0.627965 54.1553 1.72142L64.3303 13.4371C65.2799 14.5306 66.657 15.1585 68.1053 15.1585H150C155.523 15.1585 160 19.6356 160 25.1585V110C160 115.523 155.523 120 150 120H10C4.47715 120 0 115.523 0 110V10Z" fill="url(#paint0_linear_tasks_back)"></path>
+                            <defs>
+                                <linearGradient id="paint0_linear_tasks_back" x1="0" y1="0" x2="80" y2="120" gradientUnits="userSpaceOnUse">
+                                    <stop stop-color="#8F88C2"></stop>
+                                    <stop offset="1" stop-color="#5C52A2"></stop>
+                                </linearGradient>
+                            </defs>
+                        </svg>
+                        <!-- Передняя часть (список задач) -->
+                        <svg class="fileFront" width="160" height="120" viewBox="0 0 160 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <rect x="20" y="30" width="120" height="60" rx="10" fill="url(#paint0_linear_tasks_front)"/>
+                            <line x1="30" y1="50" x2="50" y2="50" stroke="white" stroke-width="3"/>
+                            <line x1="30" y1="70" x2="50" y2="70" stroke="white" stroke-width="3"/>
+                            <line x1="30" y1="90" x2="50" y2="90" stroke="white" stroke-width="3"/>
+                            <defs>
+                                <linearGradient id="paint0_linear_tasks_front" x1="80" y1="30" x2="80" y2="90" gradientUnits="userSpaceOnUse">
+                                    <stop stop-color="#C3BBFF"></stop>
+                                    <stop offset="1" stop-color="#51469A"></stop>
+                                </linearGradient>
+                            </defs>
+                        </svg>
+                    </span>
+                    <p class="text">Задачи</p>
+                </button>
+                <button id="calendar-button">
+                    <span class="folderContainer">
+                        <!-- Задний фон (папка) -->
+                        <svg class="fileBack" width="160" height="120" viewBox="0 0 160 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M0 10C0 4.47715 4.47715 0 10 0H50C51.8285 0 53.2056 0.627965 54.1553 1.72142L64.3303 13.4371C65.2799 14.5306 66.657 15.1585 68.1053 15.1585H150C155.523 15.1585 160 19.6356 160 25.1585V110C160 115.523 155.523 120 150 120H10C4.47715 120 0 115.523 0 110V10Z" fill="url(#paint0_linear_calendar_back)"></path>
+                            <defs>
+                                <linearGradient id="paint0_linear_calendar_back" x1="0" y1="0" x2="80" y2="120" gradientUnits="userSpaceOnUse">
+                                    <stop stop-color="#8F88C2"></stop>
+                                    <stop offset="1" stop-color="#5C52A2"></stop>
+                                </linearGradient>
+                            </defs>
+                        </svg>
+                        <!-- Передняя часть (календарь) -->
+                        <svg class="fileFront" width="160" height="120" viewBox="0 0 160 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <rect x="20" y="30" width="120" height="60" rx="10" fill="url(#paint0_linear_calendar_front)"/>
+                            <rect x="30" y="40" width="100" height="40" rx="5" fill="white"/>
+                            <line x1="30" y1="55" x2="130" y2="55" stroke="#51469A" stroke-width="2"/>
+                            <line x1="30" y1="70" x2="130" y2="70" stroke="#51469A" stroke-width="2"/>
+                            <line x1="30" y1="85" x2="130" y2="85" stroke="#51469A" stroke-width="2"/>
+                            <defs>
+                                <linearGradient id="paint0_linear_calendar_front" x1="80" y1="30" x2="80" y2="90" gradientUnits="userSpaceOnUse">
+                                    <stop stop-color="#C3BBFF"></stop>
+                                    <stop offset="1" stop-color="#51469A"></stop>
+                                </linearGradient>
+                            </defs>
+                        </svg>
+                    </span>
+                    <p class="text">Календарь</p>
+                </button>
+            <div id="settings-frame">
+                <button id="settings-button" class="setting-btn">
+                    <div class="bar bar1"></div>
+                    <div class="bar bar2"></div>
+                    <div class="bar bar1"></div>
+                </button>
+            </div>
+        </div>
+        <div id="main-panel">
+            <h1>Добро пожаловать в Berkut Workflow Organizer</h1>
+            <div class="tile-container">
+                <div class="tile-row">
+                    <div class="tile" id="weekly-tasks-tile">
+                        <div class="align">
+                            <div class="red"></div>
+                            <div class="yellow"></div>
+                            <div class="green"></div>
+                        </div>
+                        <h3>Задачи этой недели</h3>
+                        <div class="tasks-scroll-container">
+                            <div id="weekly-tasks-list"></div>
+                        </div>
+                    </div>
+        
+                    <div class="tile" id="next-week-tasks-tile">
+                        <div class="align">
+                            <div class="red"></div>
+                            <div class="yellow"></div>
+                            <div class="green"></div>
+                        </div>
+                        <h3>Задачи следующей недели</h3>
+                        <div class="tasks-scroll-container">
+                            <div id="next-week-tasks-list"></div>
+                        </div>
+                    </div>
+        
+                    <div class="tile" id="total-tasks-tile">
+                        <div class="align">
+                            <div class="red"></div>
+                            <div class="yellow"></div>
+                            <div class="green"></div>
+                        </div>
+                        <h3>Всего задач</h3>
+                        <p id="total-tasks-count">0</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Новый интерфейс для заметок -->
+        <div id="notes-panel" style="display: none;">
+            <h1>Заметки</h1>
+            <div class="notes-container">
+                <!-- Первая колонка: папки -->
+                <div id="folder-column" class="column">
+                    <button id="add-folder">Добавить папку</button>
+                    <div id="folder-view" class="file-explorer">
+                        <!-- Здесь будут отображаться папки -->
+                    </div>
+                </div>
+        
+                <!-- Вторая колонка: файлы -->
+                <div id="file-column" class="column">
+                    <div id="notes-in-folder" style="display: none;">
+                        <h2 id="folder-title">[Название папки]</h2>
+                        <button id="add-note">Добавить заметку</button>
+                        <div id="note-view" class="file-explorer">
+                            <!-- Здесь будут отображаться заметки -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="editor">
+            <div class="toolbar">
+                <button id="save-note">
+                    <svg class="icon" viewBox="0 0 24 24">
+                        <path d="M19 12v7H5v-7H3v7c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-7h-2zm-6 .67l2.59-2.58L17 11.5l-5 5-5-5 1.41-1.41L11 12.67V3h2v9.67z"/>
+                    </svg>
+                </button>
+                <button id="rename-note">
+                    <svg class="icon" viewBox="0 0 24 24">
+                        <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+                    </svg>
+                </button>
+                <button id="view-versions">
+                    <svg class="icon" viewBox="0 0 24 24">
+                        <path d="M20 2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h4v3c0 .6.4 1 1 1h.5c.2 0 .5-.1.7-.3l3.7-3.7H20c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14h-8.8l-.3.3-2.7 2.7V16H4V4h16v12z"/>
+                    </svg>
+                </button>
+                <div class="save-status"></div>
+            </div>
+            <textarea id="note-editor" placeholder="Напишите свою заметку здесь..."></textarea>
+        </div>
+
+        <!-- Вкладка "Задачи" -->
+        <div id="tasks-panel" style="display: none;">
+            <h1>Задачи</h1>
+            <div class="tasks-container">
+                <!-- Колонка для создания проектов -->
+                <div id="project-column" class="column">
+                    <button id="add-project">
+                        <svg class="button-icon" viewBox="0 0 24 24">
+                            <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+                        </svg>
+                        Добавить проект
+                    </button>
+                    <div id="project-view" class="file-explorer">
+                        <!-- Здесь будут отображаться проекты -->
+                    </div>
+                </div>
+        
+                <!-- Колонка для задач внутри проекта -->
+                <div id="task-column" class="column">
+                    <div id="tasks-in-project" style="display: none;">
+                        <div class="task-header">
+                            <h2 id="project-title">[Название проекта]</h2>
+                            <select id="status-filter">
+                                <option value="all">Все задачи</option>
+                                <option value="todo">К выполнению</option>
+                                <option value="in-progress">В процессе</option>
+                                <option value="done">Выполнено</option>
+                            </select>
+                            <button id="add-task" class="add-task-button">
+                                <svg class="button-icon" viewBox="0 0 24 24">
+                                    <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <div id="task-list" class="task-list">
+                            <!-- Задачи будут отображаться здесь -->
+                        </div>
+                    </div>
+                </div>
+        
+                <!-- Фрейм для добавления задачи (справа) -->
+                <div id="task-form-frame" class="column" style="display: none;">
+                    <h2>Добавить задачу</h2>
+                    <div id="task-form">
+                        <input type="text" id="task-title" placeholder="Название задачи">
+                        <textarea id="task-description" placeholder="Описание задачи"></textarea>
+                        <input type="date" id="task-start-date" placeholder="Дата начала">
+                        <input type="date" id="task-end-date" placeholder="Дата окончания">
+                        <select id="task-priority">
+                            <option value="low">Низкий</option>
+                            <option value="medium">Средний</option>
+                            <option value="high">Высокий</option>
+                        </select>
+                        <select id="task-status">
+                            <option value="todo">К выполнению</option>
+                            <option value="in-progress">В процессе</option>
+                            <option value="done">Выполнено</option>
+                        </select>
+                        <button id="save-task">Сохранить задачу</button>
+                        <button id="cancel-task">Отмена</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="calendar-panel">
+            <div class="calendar-controls">
+                <h1>Календарь</h1>
+                <div class="selectors">
+                    <!-- Добавлен новый селектор статусов -->
+                    <select id="calendar-status-filter">
+                        <option value="all">Все задачи</option>
+                        <option value="todo">К выполнению</option>
+                        <option value="in-progress">В процессе</option>
+                        <option value="done">Выполнено</option>
+                    </select>
+                    
+                    <!-- Существующий селектор проектов -->
+                    <select id="project-filter">
+                        <option value="all">Все проекты</option>
+                    </select>
+                    
+                    <select id="month-select"></select>
+                    <select id="year-select"></select>
+                </div>
+            </div>
+            <div class="weekdays">
+                <div>Пн</div><div>Вт</div><div>Ср</div><div>Чт</div><div>Пт</div><div>Сб</div><div>Вс</div>
+            </div>
+            <div class="calendar-grid" id="calendar-days"></div>
+        </div>
+    </div>
+    <!-- Модальное окно настроек -->
+    <div id="modal">
+        <div class="modal-content"></div>
+        <h2>Настройки</h2>
+        <div class="settings-grid">
+            <!-- Карточка для группы "Внешний вид" -->
+            <div class="settings-card">
+                <div class="settings-card-header">
+                    <span class="icon"></span>
+                    <h3>Внешний вид</h3>
+                </div>
+                <div class="settings-card-body">
+                    <select id="theme-select">
+                        <option value="light">Светлая тема</option>
+                        <option value="dark">Темная тема</option>
+                    </select>
+                    <button id="apply-theme">Применить</button>
+                </div>
+            </div>
+
+            <!-- Карточка для группы "Резервное копирование" -->
+            <div class="settings-card">
+                <div class="settings-card-header">
+                    <span class="icon"></span>
+                    <h3>Резервное копирование</h3>
+                </div>
+                <div class="settings-card-body">
+                    <label>
+                        Папка для копий:
+                        <input type="text" id="backup-folder" readonly>
+                        <button id="choose-backup-folder">Выбрать папку</button>
+                    </label>
+                    <p id="last-backup">Последняя копия: никогда</p>
+                    <button id="create-backup">Создать резервную копию</button>
+                    <button id="restore-backup">Восстановить из копии</button>
+                </div>
+            </div>
+        </div>
+        <button id="close-modal">Закрыть</button>
+    </div>
+
+    <!-- Модальное окно версий -->
+    <div id="versions-modal">
+        <h2>История версий</h2>
+        <div id="versions-list">
+            <!-- Сюда будут добавляться версии -->
+        </div>
+        <button id="close-versions-modal">Закрыть</button>
+    </div>
+
+    <!-- Модальное окно для переименования заметки -->
+    <div id="rename-modal">
+        <h2>Переименовать заметку</h2>
+        <input type="text" id="rename-input" placeholder="Введите новое название">
+        <button id="rename-confirm">Переименовать</button>
+        <button id="rename-cancel">Отмена</button>
+    </div>
+
+    <!-- Модальное окно для уведомлений -->
+    <div id="alert-modal">
+        <h2>Уведомление</h2>
+        <p id="alert-message"></p>
+        <button id="close-alert-modal">ОК</button>
+    </div>
+
+    <script src="renderer.js"></script>
+</body>
+</html>

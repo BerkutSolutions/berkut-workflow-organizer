@@ -1,0 +1,32 @@
+{
+    "name": "berkut-workflow-organizer",
+    "version": "1.0.0",
+    "description": "A simple task manager",
+    "main": "main.js",
+    "scripts": {
+        "start": "electron .",
+        "pack": "electron-builder --dir",
+        "dist": "electron-builder --win portable"
+    },
+    "author": "Keliberda Aleksandr Dmitrievich",
+    "license": "MIT",
+    "devDependencies": {
+        "electron": "^26.6.10",
+        "electron-builder": "^24.9.1"
+    },
+    "build": {
+        "appId": "com.berkut.organizer",
+        "productName": "Berkut Workflow Organizer",
+        "win": {
+            "target": "portable",
+            "icon": "icon.ico"
+        },
+        "files": [
+            "**/*",
+            "!node_modules/**/*"
+        ],
+        "directories": {
+            "output": "dist"
+        }
+    }
+}
