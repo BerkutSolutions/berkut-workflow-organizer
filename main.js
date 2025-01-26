@@ -1,26 +1,34 @@
-const { app, BrowserWindow, Menu, ipcMain, dialog } = require('electron');
+const { app, BrowserWindow, Menu, ipcMain } = require('electron');
+const { dialog } = require('electron')
 const path = require('path');
 const fs = require('fs');
 
 let mainWindow;
 let settings = {};
-const foldersFilePath = path.join(__dirname, 'folders.json');
-const notesFilePath = path.join(__dirname, 'notes.json');
-const projectsFilePath = path.join(__dirname, 'projects.json');
-const settingsFilePath = path.join(__dirname, 'settings.json');
 const userDataPath = app.getPath('userData');
+const foldersFilePath = path.join(userDataPath, 'folders.json');
+const notesFilePath = path.join(userDataPath, 'notes.json');
+const projectsFilePath = path.join(userDataPath, 'projects.json');
+const settingsFilePath = path.join(userDataPath, 'settings.json');
 
-[foldersFilePath, projectsFilePath, settingsFilePath].forEach(file => {
+[foldersFilePath, notesFilePath, projectsFilePath, settingsFilePath].forEach(file => {
     if (!fs.existsSync(file)) {
         fs.writeFileSync(file, JSON.stringify([]));
     }
 });
 
+app.on('before-quit', () => {
+    console.log('Приложение завершает работу...');
+});
+
+app.on('will-quit', () => {
+    console.log('Приложение завершено.');
+});
 
 app.on('ready', () => {
-    const backupDir = path.join(app.getAppPath(), 'backup')
+    const backupDir = path.join(userDataPath, 'backup');
     if (!fs.existsSync(backupDir)) {
-        fs.mkdirSync(backupDir, { recursive: true })
+        fs.mkdirSync(backupDir, { recursive: true });
     }
     mainWindow = new BrowserWindow({
         width: 1200,
@@ -199,9 +207,11 @@ ipcMain.on('save-settings', (event, settings) => {
 });
 
 ipcMain.on('restart-app', () => {
+    mainWindow.close();
     app.relaunch();
-    app.exit();
+    app.exit(0);
 });
+
 if (fs.existsSync(settingsFilePath)) {
     settings = JSON.parse(fs.readFileSync(settingsFilePath, 'utf-8'));
 } else {
