@@ -107,7 +107,7 @@ berkut-workflow-organizer/
 
 Автор: Keliberda Aleksandr Dmitrievich
 
-GitHub: [berkutmraz](https://github.com/berkutmraz)
+GitHub: [berkutmraz](https://github.com/berkutcommunity)
 
 E-Mail: [link](mailto:aleksandr@keliberda.ru)
 
