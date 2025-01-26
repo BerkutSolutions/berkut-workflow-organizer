@@ -1,6 +1,6 @@
 {
     "name": "berkut-workflow-organizer",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "description": "A simple task manager",
     "main": "main.js",
     "scripts": {
@@ -12,7 +12,8 @@
     "license": "MIT",
     "devDependencies": {
         "electron": "^26.6.10",
-        "electron-builder": "^24.9.1"
+        "electron-builder": "^24.9.1",
+        "electron-packager": "^17.1.2"
     },
     "build": {
         "appId": "com.berkut.organizer",
@@ -21,6 +22,7 @@
             "target": "portable",
             "icon": "icon.ico"
         },
+        "asar":true,
         "files": [
             "**/*",
             "!node_modules/**/*"
