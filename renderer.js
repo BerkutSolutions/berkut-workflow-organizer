@@ -470,7 +470,6 @@ calendarButton.addEventListener('click', () => {
     notesPanel.style.display = 'none';
     document.getElementById('tasks-panel').style.display = 'none';
     editorPanel.style.display = 'none';
-ь
     const calendarPanel = document.getElementById('calendar-panel');
     calendarPanel.style.display = 'block';
 
