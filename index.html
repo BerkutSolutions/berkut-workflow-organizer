@@ -280,7 +280,6 @@
         <div id="sidebar">
             <button id="main-button">
                 <span class="folderContainer">
-                    <!-- Задний фон (папка) -->
                     <svg class="fileBack" width="160" height="120" viewBox="0 0 160 120" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M0 10C0 4.47715 4.47715 0 10 0H50C51.8285 0 53.2056 0.627965 54.1553 1.72142L64.3303 13.4371C65.2799 14.5306 66.657 15.1585 68.1053 15.1585H150C155.523 15.1585 160 19.6356 160 25.1585V110C160 115.523 155.523 120 150 120H10C4.47715 120 0 115.523 0 110V10Z" fill="url(#paint0_linear_home_back)"></path>
                         <defs>
@@ -290,7 +289,6 @@
                             </linearGradient>
                         </defs>
                     </svg>
-                    <!-- Передняя часть (дом) -->
                     <svg class="fileFront" width="160" height="120" viewBox="0 0 160 120" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M80 20L20 60V100H140V60L80 20Z" fill="url(#paint0_linear_home_front)"/>
                         <rect x="70" y="60" width="20" height="20" rx="5" fill="white"/>
@@ -306,7 +304,6 @@
             </button>
             <button id="notes-button">
                 <span class="folderContainer">
-                    <!-- Повторяем SVG для иконки заметок -->
                     <svg class="fileBack" width="146" height="113" viewBox="0 0 146 113" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M0 4C0 1.79086 1.79086 0 4 0H50.3802C51.8285 0 53.2056 0.627965 54.1553 1.72142L64.3303 13.4371C65.2799 14.5306 66.657 15.1585 68.1053 15.1585H141.509C143.718 15.1585 145.509 16.9494 145.509 19.1585V109C145.509 111.209 143.718 113 141.509 113H3.99999C1.79085 113 0 111.209 0 109V4Z" fill="url(#paint0_linear_117_4)"></path>
                         <defs>
@@ -338,7 +335,6 @@
                 <p class="text">Заметки</p>
                 <button id="tasks-button">
                     <span class="folderContainer">
-                        <!-- Задний фон (папка) -->
                         <svg class="fileBack" width="160" height="120" viewBox="0 0 160 120" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path d="M0 10C0 4.47715 4.47715 0 10 0H50C51.8285 0 53.2056 0.627965 54.1553 1.72142L64.3303 13.4371C65.2799 14.5306 66.657 15.1585 68.1053 15.1585H150C155.523 15.1585 160 19.6356 160 25.1585V110C160 115.523 155.523 120 150 120H10C4.47715 120 0 115.523 0 110V10Z" fill="url(#paint0_linear_tasks_back)"></path>
                             <defs>
@@ -348,7 +344,6 @@
                                 </linearGradient>
                             </defs>
                         </svg>
-                        <!-- Передняя часть (список задач) -->
                         <svg class="fileFront" width="160" height="120" viewBox="0 0 160 120" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <rect x="20" y="30" width="120" height="60" rx="10" fill="url(#paint0_linear_tasks_front)"/>
                             <line x1="30" y1="50" x2="50" y2="50" stroke="white" stroke-width="3"/>
@@ -366,7 +361,6 @@
                 </button>
                 <button id="calendar-button">
                     <span class="folderContainer">
-                        <!-- Задний фон (папка) -->
                         <svg class="fileBack" width="160" height="120" viewBox="0 0 160 120" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path d="M0 10C0 4.47715 4.47715 0 10 0H50C51.8285 0 53.2056 0.627965 54.1553 1.72142L64.3303 13.4371C65.2799 14.5306 66.657 15.1585 68.1053 15.1585H150C155.523 15.1585 160 19.6356 160 25.1585V110C160 115.523 155.523 120 150 120H10C4.47715 120 0 115.523 0 110V10Z" fill="url(#paint0_linear_calendar_back)"></path>
                             <defs>
@@ -376,7 +370,6 @@
                                 </linearGradient>
                             </defs>
                         </svg>
-                        <!-- Передняя часть (календарь) -->
                         <svg class="fileFront" width="160" height="120" viewBox="0 0 160 120" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <rect x="20" y="30" width="120" height="60" rx="10" fill="url(#paint0_linear_calendar_front)"/>
                             <rect x="30" y="40" width="100" height="40" rx="5" fill="white"/>
@@ -442,25 +435,20 @@
             </div>
         </div>
 
-        <!-- Новый интерфейс для заметок -->
         <div id="notes-panel" style="display: none;">
             <h1>Заметки</h1>
             <div class="notes-container">
-                <!-- Первая колонка: папки -->
                 <div id="folder-column" class="column">
                     <button id="add-folder">Добавить папку</button>
                     <div id="folder-view" class="file-explorer">
-                        <!-- Здесь будут отображаться папки -->
                     </div>
                 </div>
         
-                <!-- Вторая колонка: файлы -->
                 <div id="file-column" class="column">
                     <div id="notes-in-folder" style="display: none;">
                         <h2 id="folder-title">[Название папки]</h2>
                         <button id="add-note">Добавить заметку</button>
                         <div id="note-view" class="file-explorer">
-                            <!-- Здесь будут отображаться заметки -->
                         </div>
                     </div>
                 </div>
@@ -468,17 +456,17 @@
         </div>
         <div id="editor">
             <div class="toolbar">
-                <button id="save-note">
+                <button id="save-note" title="Сохранить изменения">
                     <svg class="icon" viewBox="0 0 24 24">
                         <path d="M19 12v7H5v-7H3v7c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-7h-2zm-6 .67l2.59-2.58L17 11.5l-5 5-5-5 1.41-1.41L11 12.67V3h2v9.67z"/>
                     </svg>
                 </button>
-                <button id="rename-note">
+                <button id="rename-note" title="Переименовать заметку">
                     <svg class="icon" viewBox="0 0 24 24">
                         <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
                     </svg>
                 </button>
-                <button id="view-versions">
+                <button id="view-versions" title="Просмотреть историю изменений">
                     <svg class="icon" viewBox="0 0 24 24">
                         <path d="M20 2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h4v3c0 .6.4 1 1 1h.5c.2 0 .5-.1.7-.3l3.7-3.7H20c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14h-8.8l-.3.3-2.7 2.7V16H4V4h16v12z"/>
                     </svg>
@@ -488,11 +476,9 @@
             <textarea id="note-editor" placeholder="Напишите свою заметку здесь..."></textarea>
         </div>
 
-        <!-- Вкладка "Задачи" -->
         <div id="tasks-panel" style="display: none;">
             <h1>Задачи</h1>
             <div class="tasks-container">
-                <!-- Колонка для создания проектов -->
                 <div id="project-column" class="column">
                     <button id="add-project">
                         <svg class="button-icon" viewBox="0 0 24 24">
@@ -501,15 +487,13 @@
                         Добавить проект
                     </button>
                     <div id="project-view" class="file-explorer">
-                        <!-- Здесь будут отображаться проекты -->
                     </div>
                 </div>
-        
-                <!-- Колонка для задач внутри проекта -->
+
                 <div id="task-column" class="column">
                     <div id="tasks-in-project" style="display: none;">
                         <div class="task-header">
-                            <h2 id="project-title">[Название проекта]</h2>
+                            <h2 id="project-title" ondblclick="editProjectTitle()">[Название проекта]</h2>
                             <select id="status-filter">
                                 <option value="all">Все задачи</option>
                                 <option value="todo">К выполнению</option>
@@ -523,18 +507,18 @@
                             </button>
                         </div>
                         <div id="task-list" class="task-list">
-                            <!-- Задачи будут отображаться здесь -->
                         </div>
                     </div>
                 </div>
-        
-                <!-- Фрейм для добавления задачи (справа) -->
+
                 <div id="task-form-frame" class="column" style="display: none;">
                     <h2>Добавить задачу</h2>
                     <div id="task-form">
-                        <input type="text" id="task-title" placeholder="Название задачи">
+                        <textarea id="task-title" placeholder="Название задачи" class="task-title-input"></textarea>
                         <textarea id="task-description" placeholder="Описание задачи"></textarea>
+                        <label for="task-start-date">Дата начала:</label>
                         <input type="date" id="task-start-date" placeholder="Дата начала">
+                        <label for="task-end-date">Дата окончания:</label>
                         <input type="date" id="task-end-date" placeholder="Дата окончания">
                         <select id="task-priority">
                             <option value="low">Низкий</option>
@@ -556,7 +540,6 @@
             <div class="calendar-controls">
                 <h1>Календарь</h1>
                 <div class="selectors">
-                    <!-- Добавлен новый селектор статусов -->
                     <select id="calendar-status-filter">
                         <option value="all">Все задачи</option>
                         <option value="todo">К выполнению</option>
@@ -564,7 +547,6 @@
                         <option value="done">Выполнено</option>
                     </select>
                     
-                    <!-- Существующий селектор проектов -->
                     <select id="project-filter">
                         <option value="all">Все проекты</option>
                     </select>
@@ -579,12 +561,10 @@
             <div class="calendar-grid" id="calendar-days"></div>
         </div>
     </div>
-    <!-- Модальное окно настроек -->
     <div id="modal">
         <div class="modal-content"></div>
         <h2>Настройки</h2>
         <div class="settings-grid">
-            <!-- Карточка для группы "Внешний вид" -->
             <div class="settings-card">
                 <div class="settings-card-header">
                     <span class="icon"></span>
@@ -599,7 +579,6 @@
                 </div>
             </div>
 
-            <!-- Карточка для группы "Резервное копирование" -->
             <div class="settings-card">
                 <div class="settings-card-header">
                     <span class="icon"></span>
@@ -620,16 +599,13 @@
         <button id="close-modal">Закрыть</button>
     </div>
 
-    <!-- Модальное окно версий -->
     <div id="versions-modal">
         <h2>История версий</h2>
         <div id="versions-list">
-            <!-- Сюда будут добавляться версии -->
         </div>
         <button id="close-versions-modal">Закрыть</button>
     </div>
 
-    <!-- Модальное окно для переименования заметки -->
     <div id="rename-modal">
         <h2>Переименовать заметку</h2>
         <input type="text" id="rename-input" placeholder="Введите новое название">
@@ -637,7 +613,6 @@
         <button id="rename-cancel">Отмена</button>
     </div>
 
-    <!-- Модальное окно для уведомлений -->
     <div id="alert-modal">
         <h2>Уведомление</h2>
         <p id="alert-message"></p>
