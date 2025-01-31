@@ -3487,3 +3487,67 @@ body.dark-theme .priority-dot.ending {
         opacity: 0;
     }
 }
+
+.task-title-input {
+    width: 100%;
+    padding: 8px;
+    margin-bottom: 10px;
+    border: 1px solid #4c566a;
+    border-radius: 5px;
+    font-size: 14px;
+    resize: vertical;
+    overflow-y: auto;
+    min-height: 20px;
+    max-height: 40px;
+    background: #d8dee9;
+    color: #2e3440;
+}
+
+body.dark-theme .task-title-input {
+    background: #4c566a;
+    color: #d8dee9;
+    border-color: #81a1c1;
+}
+#rename-modal {
+    position: fixed !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    z-index: 1000 !important;
+    width: 400px;
+    max-width: 90%;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    display: none;
+}
+
+#rename-modal.active {
+    display: block !important;
+    opacity: 1 !important;
+    transform: translate(-50%, -50%) scale(1) !important;
+}
+
+/* Для темной темы */
+body.dark-theme #rename-modal {
+    background: #3b4252;
+    color: #d8dee9;
+}
+
+/* Общие стили для всех модальных окон */
+#modal,
+#versions-modal,
+#rename-modal,
+#alert-modal {
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.9);
+}
+
+#modal.active,
+#versions-modal.active,
+#rename-modal.active,
+#alert-modal.active {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+}
