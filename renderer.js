@@ -234,6 +234,7 @@ function renameFolder(index) {
 }
 
 function renameNote(index) {
+    closeAllModals();
     if (currentFolderIndex === null) {
         showAlert('Сначала откройте папку.');
         return;
@@ -306,6 +307,8 @@ async function saveTitle(index, newTitle) {
 }
 
 saveNoteButton.addEventListener('click', async () => {
+closeAllModals();
+
     if (currentFolderIndex !== null && currentNoteIndex !== null) {
         const content = noteEditor.value;
         const timestamp = Date.now();
@@ -329,6 +332,7 @@ saveNoteButton.addEventListener('click', async () => {
 });
 
 renameNoteButton.addEventListener('click', () => {
+    closeAllModals(); 
     if (currentNoteIndex !== null) {
         renameInput.value = notes[currentNoteIndex].title || '';
         renameModal.classList.add('active');
@@ -353,6 +357,8 @@ renameCancelButton.addEventListener('click', () => {
 });
 
 viewVersionsButton.addEventListener('click', () => {
+    closeAllModals();
+
     if (currentNoteIndex !== null && versions[currentNoteIndex]) {
         versionsList.innerHTML = ''; 
         versions[currentNoteIndex].forEach((version, index) => {
@@ -438,7 +444,9 @@ closeAlertModalButton.addEventListener('click', () => {
     alertModal.classList.remove('active');
 });
 
+
 mainButton.addEventListener('click', () => {
+    closeAllModals();
     mainPanel.style.display = 'block';
     notesPanel.style.display = 'none';
     document.getElementById('tasks-panel').style.display = 'none'; 
@@ -447,6 +455,7 @@ mainButton.addEventListener('click', () => {
 });
 
 notesButton.addEventListener('click', () => {
+    closeAllModals();
     mainPanel.style.display = 'none';
     notesPanel.style.display = 'block';
     document.getElementById('tasks-panel').style.display = 'none'; 
@@ -454,8 +463,8 @@ notesButton.addEventListener('click', () => {
     editorPanel.style.display = 'none';
 });
 
-
 tasksButton.addEventListener('click', () => {
+    closeAllModals();
     mainPanel.style.display = 'none';
     notesPanel.style.display = 'none';
     document.getElementById('tasks-panel').style.display = 'block';
@@ -465,7 +474,7 @@ tasksButton.addEventListener('click', () => {
 });
 
 calendarButton.addEventListener('click', () => {
-
+    closeAllModals();
     mainPanel.style.display = 'none';
     notesPanel.style.display = 'none';
     document.getElementById('tasks-panel').style.display = 'none';
@@ -473,6 +482,11 @@ calendarButton.addEventListener('click', () => {
     const calendarPanel = document.getElementById('calendar-panel');
     calendarPanel.style.display = 'block';
 
+    initCalendar(); 
+    loadCalendarTasks();
+    renderCalendar(currentMonth, currentYear);
+
+    calendarPanel.style.opacity = '0';
     setTimeout(() => {
         calendarPanel.style.opacity = '1';
         calendarPanel.style.transform = 'translateY(0)';
@@ -585,6 +599,7 @@ function renderTasks() {
 }
 
 function openTaskEditor(task, isEditMode = false) {
+    closeAllModals();
     const modal = document.createElement('div');
     modal.className = 'task-editor-modal';
     modal.innerHTML = `
@@ -592,7 +607,7 @@ function openTaskEditor(task, isEditMode = false) {
             <h3>${isEditMode ? 'Редактирование' : 'Просмотр'} задачи</h3>
             <div class="form-row">
                 <label>Название:</label>
-                <input type="text" id="edit-task-title" value="${task.title}">
+                <textarea id="edit-task-title" class="task-title-input">${task.title}</textarea>
             </div>
             <div class="form-row">
                 <label>Описание:</label>
@@ -654,11 +669,6 @@ function openTaskEditor(task, isEditMode = false) {
         modal.remove();
     });
 }
-
-document.getElementById('add-task').addEventListener('click', () => {
-    const taskForm = document.getElementById('task-form');
-    taskForm.style.display = 'block';
-});
 
 document.getElementById('save-task').addEventListener('click', async () => {
     const title = document.getElementById('task-title').value;
@@ -833,6 +843,10 @@ function renameProject(index) {
                 projects[index].name = newName;
                 await saveProjects();
                 renderProjects();
+                // Обновляем заголовок открытого проекта
+                if (currentProjectIndex === index) {
+                    document.getElementById('project-title').textContent = newName;
+                }
             }
         }
     });
@@ -843,6 +857,10 @@ function renameProject(index) {
             projects[index].name = newName;
             await saveProjects();
             renderProjects();
+            // Обновляем заголовок открытого проекта
+            if (currentProjectIndex === index) {
+                document.getElementById('project-title').textContent = newName;
+            }
         }
     });
 }
@@ -898,9 +916,60 @@ document.getElementById('add-project').addEventListener('click', async () => {
     updateProjectFilter(); 
 });
 
+function resetTaskForm() {
+    document.getElementById('task-title').value = '';
+    document.getElementById('task-description').value = '';
+    document.getElementById('task-start-date').value = ''; 
+    document.getElementById('task-end-date').value = '';
+    document.getElementById('task-priority').value = 'low'; 
+    document.getElementById('task-status').value = 'todo';
+}
+
+function editProjectTitle() {
+    const projectTitle = document.getElementById('project-title');
+    const currentName = projectTitle.textContent;
+
+    // Создаем поле ввода
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.value = currentName;
+    input.classList.add('rename-input');
+
+    // Заменяем текст на поле ввода
+    projectTitle.replaceWith(input);
+    input.focus();
+
+    // Сохраняем изменения при нажатии Enter или потере фокуса
+    input.addEventListener('keydown', async (event) => {
+        if (event.key === 'Enter') {
+            const newName = input.value.trim();
+            if (newName && currentProjectIndex !== null) {
+                projects[currentProjectIndex].name = newName;
+                await saveProjects();
+                renderProjects();
+                projectTitle.textContent = newName;
+                input.replaceWith(projectTitle);
+            }
+        }
+    });
+
+    input.addEventListener('blur', async () => {
+        const newName = input.value.trim();
+        if (newName && currentProjectIndex !== null) {
+            projects[currentProjectIndex].name = newName;
+            await saveProjects();
+            renderProjects();
+            projectTitle.textContent = newName;
+            input.replaceWith(projectTitle);
+        }
+    });
+}
+
 document.getElementById('add-task').addEventListener('click', () => {
     const taskFormFrame = document.getElementById('task-form-frame');
+    const taskForm = document.getElementById('task-form');
     taskFormFrame.style.display = 'block';
+    taskForm.style.display = 'block';
 });
 
 function saveProjects() {
@@ -1010,12 +1079,21 @@ function showContextMenu(e, task, index) {
         box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     `;
 
+    const projectOptions = projects.map(project => 
+        `<option value="${project.name}" ${project.name === task.project ? 'selected' : ''}>${project.name}</option>`
+    ).join('');
+
     contextMenu.innerHTML = `
         <div class="status-selector">
             <select class="status-select">
                 <option value="todo" ${task.status === 'todo' ? 'selected' : ''}>К выполнению</option>
                 <option value="in-progress" ${task.status === 'in-progress' ? 'selected' : ''}>В процессе</option>
                 <option value="done" ${task.status === 'done' ? 'selected' : ''}>Выполнено</option>
+            </select>
+        </div>
+        <div class="project-selector">
+            <select class="project-select">
+                ${projectOptions}
             </select>
         </div>
         <button class="delete-task">Удалить</button>
@@ -1029,8 +1107,44 @@ function showContextMenu(e, task, index) {
         contextMenu.remove();
     });
 
+    const projectSelect = contextMenu.querySelector('.project-select');
+    projectSelect.addEventListener('change', async () => {
+        const newProjectName = projectSelect.value;
+        const newProject = projects.find(p => p.name === newProjectName);
+    
+        if (newProject) {
+            const currentProject = projects.find(p => p.tasks.includes(task));
+            if (currentProject) {
+                const taskIndex = currentProject.tasks.indexOf(task);
+                if (taskIndex !== -1) {
+                    currentProject.tasks.splice(taskIndex, 1);
+                }
+
+                renderTasksInProject(currentProject.tasks);
+            }
+
+            newProject.tasks.push(task);
+            task.project = newProjectName;
+
+            await saveProjects();
+
+            if (currentProjectIndex !== null && projects[currentProjectIndex].name === newProjectName) {
+                renderTasksInProject(projects[currentProjectIndex].tasks);
+            }
+
+            contextMenu.remove();
+        }
+    });
+
     contextMenu.querySelector('.delete-task').addEventListener('click', async () => {
-        projects[currentProjectIndex].tasks.splice(index, 1);
+        const currentProject = projects.find(p => p.tasks.includes(task));
+        if (currentProject) {
+            const taskIndex = currentProject.tasks.indexOf(task);
+            if (taskIndex !== -1) {
+                currentProject.tasks.splice(taskIndex, 1);
+            }
+        }
+
         await saveProjects();
         renderTasksInProject(projects[currentProjectIndex].tasks);
         contextMenu.remove();
@@ -1322,6 +1436,12 @@ async function loadCalendarTasks() {
 }
 
 function showDayTasks(e, date) {
+    // Закрываем предыдущее модальное окно, если оно есть
+    const existingModal = document.querySelector('.calendar-day-modal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+
     const formattedDate = new Date(date).toISOString().split('T')[0];
     const today = new Date().toISOString().split('T')[0];
 
@@ -1381,6 +1501,16 @@ function showDayTasks(e, date) {
 
     modal.querySelector('.close-modal').addEventListener('click', () => modal.remove());
     document.body.appendChild(modal);
+}
+
+function closeAllModals() {
+    document.querySelectorAll(
+        '#modal, #versions-modal, #rename-modal, #alert-modal, .calendar-day-modal, .task-editor-modal'
+    ).forEach(modal => {
+        modal.classList.remove('active'); 
+    });
+
+    document.querySelectorAll('.context-menu, .calendar-context-menu').forEach(modal => modal.remove());
 }
 
 document.getElementById('calendar-status-filter').addEventListener('change', () => {
@@ -1448,8 +1578,14 @@ function showTaskModal(date) {
 
     modal.innerHTML = `
         <h3>Новая задача на ${date}</h3>
-        <input type="text" id="task-title" placeholder="Название" class="task-input">
-        <textarea id="task-description" placeholder="Описание" class="task-input"></textarea>
+        <div class="form-row">
+            <label>Название:</label>
+            <textarea id="task-title" placeholder="Название" class="task-title-input"></textarea>
+        </div>
+        <div class="form-row">
+            <label>Описание:</label>
+            <textarea id="task-description" placeholder="Описание" class="task-input"></textarea>
+        </div>
         
         <div class="task-fields">
             <div>
@@ -1490,7 +1626,6 @@ function showTaskModal(date) {
     `;
 
     modal.querySelector('.save-task').addEventListener('click', async () => {
-
         if (projects.length === 0) {
             showAlert('Сначала создайте проект!');
             return;
@@ -1536,24 +1671,6 @@ function showTaskModal(date) {
 
 document.addEventListener('DOMContentLoaded', initCalendar);
 
-calendarButton.addEventListener('click', () => {
-    mainPanel.style.display = 'none';
-    notesPanel.style.display = 'none';
-    document.getElementById('tasks-panel').style.display = 'none';
-    editorPanel.style.display = 'none';
-    const calendarPanel = document.getElementById('calendar-panel');
-    calendarPanel.style.display = 'block';
-
-    initCalendar(); 
-    loadCalendarTasks();
-    renderCalendar(currentMonth, currentYear);
-
-    calendarPanel.style.opacity = '0';
-    setTimeout(() => {
-        calendarPanel.style.opacity = '1';
-        calendarPanel.style.transform = 'translateY(0)';
-    }, 10);
-});
 
 function initCalendarPanel() {
     document.getElementById('calendar-panel').style.display = 'block';
