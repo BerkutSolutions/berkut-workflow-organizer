@@ -58,6 +58,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loadFolders();
     loadTasks();
     loadProjects();
+    renderNotes(); 
     initCalendarControls();
     renderCalendar(currentMonth, currentYear);
     updateProjectFilter();
@@ -167,7 +168,7 @@ function renderNotesInFolder(notes) {
         });
 
         noteItem.addEventListener('dblclick', () => {
-            renameNote(index); 
+            renameNote(index);
         });
 
         const deleteButton = document.createElement('button');
@@ -301,7 +302,6 @@ async function saveTitle(index, newTitle) {
     if (newTitle.trim()) {
         notes[index].title = newTitle.trim();
         await saveNotes(); 
-        renderNotes();
         updateTiles();
     }
 }
@@ -345,7 +345,6 @@ renameConfirmButton.addEventListener('click', async () => {
         if (newTitle) {
             notes[currentNoteIndex].title = newTitle;
             await saveNotes(); 
-            renderNotes();
             updateTiles();
             renameModal.classList.remove('active');
         }
@@ -410,7 +409,6 @@ addNoteButton.addEventListener('click', async () => {
     notes.push(newNote); 
     await saveNotes(); 
     currentNoteIndex = notes.length - 1;
-    renderNotes(); 
     noteEditor.value = ''; 
     updateTiles(); 
 });
@@ -562,7 +560,11 @@ function renderTasks() {
     const inProgressTasks = document.getElementById('in-progress-tasks');
     const doneTasks = document.getElementById('done-tasks');
 
-    todoTasks.innerHTML = '';
+    if (todoTasks) {
+        todoTasks.innerHTML = '';
+    } else {
+        console.error("Элемент 'todo-tasks' не найден в DOM!");
+    }
     inProgressTasks.innerHTML = '';
     doneTasks.innerHTML = '';
 
@@ -1060,6 +1062,94 @@ document.getElementById('status-filter').addEventListener('change', () => {
     }
 });
 
+function showNoteContextMenu(e, noteIndex) {
+    e.preventDefault();
+    const oldMenu = document.querySelector('.context-menu');
+    if (oldMenu) oldMenu.remove();
+
+    const contextMenu = document.createElement('div');
+    contextMenu.className = 'context-menu';
+    contextMenu.style.cssText = `
+        left: ${e.clientX}px; 
+        top: ${e.clientY}px;
+        position: fixed;
+        z-index: 1000;
+        background: #eceff4;
+        border: 1px solid #4c566a;
+        border-radius: 6px;
+        padding: 8px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    `;
+
+    const folderOptions = folders.map(folder => 
+        `<option value="${folder.name}" ${folder.name === folders[currentFolderIndex].name ? 'selected' : ''}>${folder.name}</option>`
+    ).join('');
+
+    contextMenu.innerHTML = `
+        <div class="folder-selector">
+            <select class="folder-select">
+                ${folderOptions}
+            </select>
+        </div>
+    `;
+
+    const folderSelect = contextMenu.querySelector('.folder-select');
+    folderSelect.addEventListener('change', async () => {
+        const newFolderName = folderSelect.value;
+        const newFolder = folders.find(f => f.name === newFolderName);
+
+        if (newFolder) {
+            const note = folders[currentFolderIndex].notes.splice(noteIndex, 1)[0];
+            newFolder.notes.push(note);
+            await saveFolders();
+
+            // Обновляем отображение текущей папки
+            renderNotesInFolder(folders[currentFolderIndex].notes);
+
+            // Закрываем контекстное меню
+            contextMenu.remove();
+        }
+    });
+
+    document.body.appendChild(contextMenu);
+
+    const closeMenu = (event) => {
+        if (!contextMenu.contains(event.target)) {
+            contextMenu.remove();
+            document.removeEventListener('click', closeMenu);
+        }
+    };
+    document.addEventListener('click', closeMenu);
+}
+
+function updateFolderSelector() {
+    const folderSelect = document.querySelector('.folder-select');
+    if (folderSelect) {
+        folderSelect.innerHTML = folders.map(folder => 
+            `<option value="${folder.name}">${folder.name}</option>`
+        ).join('');
+    }
+}
+
+document.addEventListener('contextmenu', (e) => {
+    if (e.target.closest('.note-item')) {
+        const noteIndex = Array.from(document.querySelectorAll('.note-item')).indexOf(e.target.closest('.note-item'));
+        showNoteContextMenu(e, noteIndex);
+    }
+});
+
+document.addEventListener('click', (e) => {
+    if (e.target.closest('.weekly-task')) {
+        const taskElement = e.target.closest('.weekly-task');
+        const taskTitle = taskElement.querySelector('span').textContent;
+        const task = tasks.find(t => t.title === taskTitle);
+
+        if (task) {
+            showTaskDetailsModal(task);
+        }
+    }
+});
+
 function showContextMenu(e, task, index) {
     e.preventDefault();
     const oldMenu = document.querySelector('.context-menu');
@@ -1373,10 +1463,13 @@ function renderCalendar(month = currentMonth, year = currentYear) {
         calendarDays.appendChild(day);
     }
 
-    monthYear.textContent = `${new Date(year, month).toLocaleString('ru', { 
-        month: 'long', 
-        year: 'numeric' 
-    })}`.replace(' г.', '');
+    if (monthYear) {
+        monthYear.textContent = `${new Date(year, month).toLocaleString('ru', { 
+            month: 'long', year: 'numeric' 
+        })}`.replace(' г.', '');
+    } else {
+        console.error("Элемент 'month-year' не найден в DOM!");
+    }
 
     document.getElementById('month-select').value = currentMonth;
     document.getElementById('year-select').value = currentYear;
@@ -1688,8 +1781,71 @@ function getStatusIndicators(date, tasks) {
 
 const today = new Date();
 const currentDate = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+let day = document.createElement('div');
 if (day.dataset.date === currentDate) {
     day.classList.add('current-day');
+}
+
+document.addEventListener('click', (e) => {
+    if (e.target.closest('.weekly-task')) {
+        const taskElement = e.target.closest('.weekly-task');
+        const taskTitle = taskElement.querySelector('span').textContent;
+        const task = tasks.find(t => t.title === taskTitle);
+
+        if (task) {
+            showTaskDetailsModal(task);
+        }
+    }
+});
+
+function showTaskDetailsModal(task) {
+    // Проверяем, есть ли уже открытое модальное окно
+    const existingModal = document.querySelector('.task-details-modal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+
+    const priorityMap = {
+        low: 'Низкий',
+        medium: 'Средний',
+        high: 'Высокий'
+    };
+
+    const modal = document.createElement('div');
+    modal.className = 'task-details-modal';
+    modal.innerHTML = `
+        <div class="modal-content">
+            <h3>${task.title}</h3>
+            <p>${task.description}</p>
+            <small>Срок: ${formatDate(task.endDate)}</small>
+            <div class="task-meta">
+                <span class="priority-badge">Приоритет: ${priorityMap[task.priority] || task.priority}</span>
+            </div>
+            <button class="close-modal">Закрыть</button>
+        </div>
+    `;
+
+    modal.querySelector('.close-modal').addEventListener('click', () => {
+        modal.remove();
+    });
+
+    document.body.appendChild(modal);
+}
+
+function formatDate(dateStr) {
+    if (!dateStr) return 'Без срока';
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('ru-RU', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric'
+    });
+}
+
+
+
+function renderNotes() {
+    console.warn("Внимание: renderNotes() пока не реализована.");
 }
 
 setTimeout(() => {
