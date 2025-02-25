@@ -1,4 +1,4 @@
-const { ipcRenderer } = require('electron');
+const ipcRenderer = window.electronAPI;
 const noteList = document.getElementById('note-list');
 const noteEditor = document.getElementById('note-editor');
 const addNoteButton = document.getElementById('add-note');
@@ -41,6 +41,7 @@ const monthYear = document.getElementById('month-year');
 const tasksMap = new Map(); 
 
 
+
 let tasks = [];
 let folders = []; 
 let currentFolderIndex = null; 
@@ -56,7 +57,6 @@ let currentYear = new Date().getFullYear();
 document.addEventListener('DOMContentLoaded', () => {
     loadNotes();
     loadFolders();
-    loadTasks();
     loadProjects();
     renderNotes(); 
     initCalendarControls();
@@ -479,7 +479,11 @@ tasksButton.addEventListener('click', () => {
     document.getElementById('tasks-panel').style.display = 'block';
     document.getElementById('calendar-panel').style.display = 'none';
     editorPanel.style.display = 'none';
-    renderTasks();
+    if (currentProjectIndex !== null) {
+        renderTasksInProject(projects[currentProjectIndex].tasks);
+    } else {
+        console.log('Проект не выбран, задачи не рендерятся');
+    }
 });
 
 calendarButton.addEventListener('click', () => {
@@ -557,14 +561,6 @@ window.addEventListener('DOMContentLoaded', () => {
         backupFolderInput.value = savedBackupFolder;
     }
 });
-
-async function loadTasks() {
-    tasks = await ipcRenderer.invoke('get-tasks');
-    if (!Array.isArray(tasks)) {
-        tasks = [];
-    }
-    renderTasks();
-}
 
 function renderTasks() {
     const todoTasks = document.getElementById('todo-tasks');
@@ -729,14 +725,6 @@ document.getElementById('cancel-task').addEventListener('click', () => {
 
 async function saveTasks() {
     await ipcRenderer.invoke('save-tasks', tasks);
-}
-
-async function loadTasks() {
-    tasks = await ipcRenderer.invoke('get-tasks');
-    if (!Array.isArray(tasks)) {
-        tasks = [];
-    }
-    renderTasks();
 }
 
 document.addEventListener('click', async (event) => {
@@ -1477,14 +1465,6 @@ function renderCalendar(month = currentMonth, year = currentYear) {
         calendarDays.appendChild(day);
     }
 
-    if (monthYear) {
-        monthYear.textContent = `${new Date(year, month).toLocaleString('ru', { 
-            month: 'long', year: 'numeric' 
-        })}`.replace(' г.', '');
-    } else {
-        console.error("Элемент 'month-year' не найден в DOM!");
-    }
-
     document.getElementById('month-select').value = currentMonth;
     document.getElementById('year-select').value = currentYear;
 }
@@ -1860,13 +1840,20 @@ function formatDate(dateStr) {
 
 
 function renderNotes() {
-    console.warn("Внимание: renderNotes() пока не реализована.");
+    const noteView = document.getElementById('note-view');
+    if (!noteView) {
+        console.error("Элемент 'note-view' не найден в DOM!");
+        return;
+    }
+    noteView.innerHTML = '';
+
+    if (currentFolderIndex !== null && folders[currentFolderIndex]) {
+        renderNotesInFolder(folders[currentFolderIndex].notes);
+    } else {
+        noteView.innerHTML = '<p>Выберите папку или создайте заметку</p>';
+    }
 }
 
-setTimeout(() => {
-    calendarPanel.style.overflow = 'visible';
-    calendarPanel.style.clipPath = 'none';
-}, 50);
 
 function initCalendarControls() {
     const months = [...Array(12).keys()].map(i => 
