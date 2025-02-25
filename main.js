@@ -45,16 +45,35 @@ app.on('ready', async () => {
         width: 1200,
         height: 800,
         webPreferences: {
-            nodeIntegration: true,
-            contextIsolation: false,
-            enableRemoteModule: true
+            preload: path.join(__dirname, 'preload.js'),
+            contextIsolation: true,
         },
         frame: false,
         titleBarStyle: 'hidden',
     });
 
     await mainWindow.loadFile(path.join(__dirname, 'index.html'));
-    Menu.setApplicationMenu(null);
+    mainWindow.once('ready-to-show', () => {
+        mainWindow.show();
+    });
+
+    mainWindow.webContents.on('devtools-opened', () => {
+        mainWindow.webContents.closeDevTools(); // Закрываем, если открылись
+    });
+
+    mainWindow.webContents.on('before-input-event', (event, input) => {
+        if (input.type === 'keyDown') {
+            // Блокировка Ctrl+Shift+I (Windows/Linux) и Cmd+Opt+I (macOS)
+            if ((input.control && input.shift && input.key.toLowerCase() === 'i') ||
+                (input.meta && input.alt && input.key.toLowerCase() === 'i')) {
+                event.preventDefault();
+            }
+            // Дополнительно блокируем F12
+            if (input.key === 'F12') {
+                event.preventDefault();
+            }
+        }
+    });
 
     try {
         await fs.access(notesFilePath);
