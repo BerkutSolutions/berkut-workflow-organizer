@@ -1,7 +1,8 @@
-const { app, BrowserWindow, Menu, ipcMain } = require('electron');
-const { dialog } = require('electron')
+const { app, BrowserWindow, Menu, ipcMain, dialog } = require('electron');
 const path = require('path');
-const fs = require('fs');
+const fs = require('fs').promises;
+const archiver = require('archiver');
+const unzipper = require('unzipper');
 
 let mainWindow;
 let settings = {};
@@ -11,11 +12,16 @@ const notesFilePath = path.join(userDataPath, 'notes.json');
 const projectsFilePath = path.join(userDataPath, 'projects.json');
 const settingsFilePath = path.join(userDataPath, 'settings.json');
 
-[foldersFilePath, notesFilePath, projectsFilePath, settingsFilePath].forEach(file => {
-    if (!fs.existsSync(file)) {
-        fs.writeFileSync(file, JSON.stringify([]));
+async function initializeFiles() {
+    const files = [foldersFilePath, notesFilePath, projectsFilePath, settingsFilePath];
+    for (const file of files) {
+        try {
+            await fs.access(file);
+        } catch {
+            await fs.writeFile(file, JSON.stringify([]));
+        }
     }
-});
+}
 
 app.on('before-quit', () => {
     console.log('Приложение завершает работу...');
@@ -25,11 +31,16 @@ app.on('will-quit', () => {
     console.log('Приложение завершено.');
 });
 
-app.on('ready', () => {
+app.on('ready', async () => {
+    await initializeFiles();
+
     const backupDir = path.join(userDataPath, 'backup');
-    if (!fs.existsSync(backupDir)) {
-        fs.mkdirSync(backupDir, { recursive: true });
+    try {
+        await fs.access(backupDir);
+    } catch {
+        await fs.mkdir(backupDir, { recursive: true });
     }
+
     mainWindow = new BrowserWindow({
         width: 1200,
         height: 800,
@@ -38,35 +49,41 @@ app.on('ready', () => {
             contextIsolation: false,
             enableRemoteModule: true
         },
-        frame: false, 
-        titleBarStyle: 'hidden', 
+        frame: false,
+        titleBarStyle: 'hidden',
     });
 
-    mainWindow.loadFile(path.join(__dirname, 'index.html'));
+    await mainWindow.loadFile(path.join(__dirname, 'index.html'));
     Menu.setApplicationMenu(null);
 
-    if (!fs.existsSync(notesFilePath)) {
-        fs.writeFileSync(notesFilePath, JSON.stringify([])); 
+    try {
+        await fs.access(notesFilePath);
+    } catch {
+        await fs.writeFile(notesFilePath, JSON.stringify([]));
     }
-    
-    [notesFilePath, foldersFilePath].forEach(file => {
-        if (!fs.existsSync(file)) {
-            fs.writeFileSync(file, JSON.stringify([]));
+
+    const filesToCheck = [notesFilePath, foldersFilePath];
+    for (const file of filesToCheck) {
+        try {
+            await fs.access(file);
+        } catch {
+            await fs.writeFile(file, JSON.stringify([]));
         }
-    });
+    }
 });
 
 ipcMain.handle('get-notes', async () => {
-    if (fs.existsSync(notesFilePath)) {
-        const data = fs.readFileSync(notesFilePath, 'utf-8');
+    try {
+        const data = await fs.readFile(notesFilePath, 'utf-8');
         return JSON.parse(data);
+    } catch {
+        return [];
     }
-    return [];
 });
 
-ipcMain.handle('save-notes', async (event, notes) => { 
+ipcMain.handle('save-notes', async (event, notes) => {
     try {
-        fs.writeFileSync(notesFilePath, JSON.stringify(notes, null, 2));
+        await fs.writeFile(notesFilePath, JSON.stringify(notes, null, 2));
         return notes;
     } catch (error) {
         console.error('Ошибка при сохранении заметок:', error);
@@ -75,10 +92,10 @@ ipcMain.handle('save-notes', async (event, notes) => {
 });
 
 ipcMain.handle('delete-note', async (event, index) => {
-    const notes = JSON.parse(fs.readFileSync(notesFilePath));
-    notes.splice(index, 1); 
-    fs.writeFileSync(notesFilePath, JSON.stringify(notes, null, 2)); 
-    return notes; 
+    const notes = JSON.parse(await fs.readFile(notesFilePath));
+    notes.splice(index, 1);
+    await fs.writeFile(notesFilePath, JSON.stringify(notes, null, 2));
+    return notes;
 });
 
 app.on('window-all-closed', () => {
@@ -92,6 +109,7 @@ app.on('activate', () => {
         createMainWindow();
     }
 });
+
 ipcMain.on('window-close', () => {
     mainWindow.close();
 });
@@ -109,19 +127,20 @@ ipcMain.on('window-maximize', () => {
 });
 
 ipcMain.handle('select-folder', async () => {
-    const defaultPath = path.join(app.getAppPath(), 'backup')
-    
-    if (!fs.existsSync(defaultPath)) {
-        fs.mkdirSync(defaultPath, { recursive: true })
+    const defaultPath = path.join(app.getAppPath(), 'backup');
+    try {
+        await fs.access(defaultPath);
+    } catch {
+        await fs.mkdir(defaultPath, { recursive: true });
     }
 
     const result = await dialog.showOpenDialog({
         properties: ['openDirectory', 'createDirectory'],
-        defaultPath: defaultPath 
-    })
-    
-    return result.filePaths[0]
-})
+        defaultPath: defaultPath
+    });
+
+    return result.filePaths[0];
+});
 
 ipcMain.handle('select-file', async (event, extensions) => {
     const result = await dialog.showOpenDialog({
@@ -130,35 +149,60 @@ ipcMain.handle('select-file', async (event, extensions) => {
     return result.filePaths[0];
 });
 
-
 ipcMain.handle('create-backup', async (event, folderPath) => {
     try {
+        await fs.access(folderPath, fs.constants.W_OK);
 
-        await fs.promises.access(folderPath, fs.constants.W_OK)
-        
         const backupData = {
-            settings: JSON.parse(fs.readFileSync(settingsFilePath, 'utf-8')),
-            folders: JSON.parse(fs.readFileSync(foldersFilePath, 'utf-8')),
-            projects: JSON.parse(fs.readFileSync(projectsFilePath, 'utf-8'))
-        }
+            settings: JSON.parse(await fs.readFile(settingsFilePath, 'utf-8')),
+            folders: JSON.parse(await fs.readFile(foldersFilePath, 'utf-8')),
+            projects: JSON.parse(await fs.readFile(projectsFilePath, 'utf-8')),
+            notes: JSON.parse(await fs.readFile(notesFilePath, 'utf-8'))
+        };
 
-        const backupFilePath = path.join(folderPath, `backup_${Date.now()}.bwo`)
-        fs.writeFileSync(backupFilePath, JSON.stringify(backupData))
-        return backupFilePath
+        const backupFilePath = path.join(folderPath, `backup_${Date.now()}.bwo`);
+        const output = require('fs').createWriteStream(backupFilePath);
+        const archive = archiver('zip', { zlib: { level: 9 } });
+
+        return new Promise((resolve, reject) => {
+            output.on('close', () => resolve(backupFilePath));
+            archive.on('error', (err) => reject(err));
+            archive.pipe(output);
+            archive.append(JSON.stringify(backupData.settings), { name: 'settings.json' });
+            archive.append(JSON.stringify(backupData.folders), { name: 'folders.json' });
+            archive.append(JSON.stringify(backupData.projects), { name: 'projects.json' });
+            archive.append(JSON.stringify(backupData.notes), { name: 'notes.json' });
+            archive.finalize();
+        });
     } catch (error) {
-        console.error('Backup error:', error)
-        return null
+        console.error('Backup error:', error);
+        return null;
     }
-})
+});
 
 ipcMain.handle('restore-backup', async (event, filePath) => {
     try {
-        const backupData = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
-        
-        fs.writeFileSync(settingsFilePath, JSON.stringify(backupData.settings, null, 2));
-        fs.writeFileSync(foldersFilePath, JSON.stringify(backupData.folders, null, 2));
-        fs.writeFileSync(projectsFilePath, JSON.stringify(backupData.projects, null, 2));
-        
+        const backupDir = path.join(userDataPath, 'temp_restore');
+        await fs.mkdir(backupDir, { recursive: true });
+
+        await new Promise((resolve, reject) => {
+            require('fs').createReadStream(filePath)
+                .pipe(unzipper.Extract({ path: backupDir }))
+                .on('close', resolve)
+                .on('error', reject);
+        });
+
+        const filesToRestore = ['settings.json', 'folders.json', 'projects.json', 'notes.json'];
+        for (const file of filesToRestore) {
+            const srcPath = path.join(backupDir, file);
+            const destPath = path.join(userDataPath, file);
+            try {
+                await fs.access(srcPath);
+                await fs.copyFile(srcPath, destPath);
+            } catch {}
+        }
+
+        await fs.rm(backupDir, { recursive: true, force: true });
         return true;
     } catch (error) {
         console.error('Ошибка при восстановлении резервной копии:', error);
@@ -172,13 +216,12 @@ ipcMain.on('window-drag', (event) => {
 });
 
 ipcMain.handle('get-tasks', async () => {
-    const projects = JSON.parse(fs.readFileSync(projectsFilePath, 'utf-8'));
+    const projects = JSON.parse(await fs.readFile(projectsFilePath, 'utf-8'));
     return projects.flatMap(p => p.tasks);
 });
 
 ipcMain.handle('save-tasks', async (event, tasks) => {
     const projects = await ipcRenderer.invoke('get-projects');
-
     projects.forEach(project => {
         project.tasks = tasks.filter(t => t.projectId === project.id);
     });
@@ -186,15 +229,17 @@ ipcMain.handle('save-tasks', async (event, tasks) => {
 });
 
 ipcMain.handle('get-projects', async () => {
-    if (!fs.existsSync(projectsFilePath)) {
-        fs.writeFileSync(projectsFilePath, JSON.stringify([]));
+    try {
+        await fs.access(projectsFilePath);
+    } catch {
+        await fs.writeFile(projectsFilePath, JSON.stringify([]));
     }
-    return JSON.parse(fs.readFileSync(projectsFilePath, 'utf-8'));
+    return JSON.parse(await fs.readFile(projectsFilePath, 'utf-8'));
 });
 
 ipcMain.handle('save-projects', async (event, projects) => {
     try {
-        fs.writeFileSync(projectsFilePath, JSON.stringify(projects, null, 2));
+        await fs.writeFile(projectsFilePath, JSON.stringify(projects, null, 2));
         return projects;
     } catch (error) {
         console.error('Ошибка при сохранении проектов:', error);
@@ -202,8 +247,8 @@ ipcMain.handle('save-projects', async (event, projects) => {
     }
 });
 
-ipcMain.on('save-settings', (event, settings) => {
-    fs.writeFileSync(settingsFilePath, JSON.stringify(settings, null, 2));
+ipcMain.on('save-settings', async (event, settings) => {
+    await fs.writeFile(settingsFilePath, JSON.stringify(settings, null, 2));
 });
 
 ipcMain.on('restart-app', () => {
@@ -212,33 +257,37 @@ ipcMain.on('restart-app', () => {
     app.exit(0);
 });
 
-if (fs.existsSync(settingsFilePath)) {
-    settings = JSON.parse(fs.readFileSync(settingsFilePath, 'utf-8'));
-} else {
-    settings = {
-        theme: 'light',
-        notifications: true,
-        backupFolder: '',
-        backupInterval: 'daily'
-    };
-    fs.writeFileSync(settingsFilePath, JSON.stringify(settings, null, 2));
-}
+(async () => {
+    try {
+        await fs.access(settingsFilePath);
+        settings = JSON.parse(await fs.readFile(settingsFilePath, 'utf-8'));
+    } catch {
+        settings = {
+            theme: 'light',
+            notifications: true,
+            backupFolder: '',
+            backupInterval: 'daily'
+        };
+        await fs.writeFile(settingsFilePath, JSON.stringify(settings, null, 2));
+    }
+})();
 
 ipcMain.handle('get-settings', async () => {
     return settings;
 });
 
 ipcMain.handle('get-folders', async () => {
-    if (fs.existsSync(foldersFilePath)) {
-        const data = fs.readFileSync(foldersFilePath, 'utf-8');
+    try {
+        const data = await fs.readFile(foldersFilePath, 'utf-8');
         return JSON.parse(data);
+    } catch {
+        return [];
     }
-    return [];
 });
 
 ipcMain.handle('save-folders', async (event, folders) => {
     try {
-        fs.writeFileSync(foldersFilePath, JSON.stringify(folders, null, 2));
+        await fs.writeFile(foldersFilePath, JSON.stringify(folders, null, 2));
         return folders;
     } catch (error) {
         console.error('Ошибка при сохранении папок:', error);
@@ -247,6 +296,5 @@ ipcMain.handle('save-folders', async (event, folders) => {
 });
 
 ipcMain.handle('get-default-backup-path', () => {
-    return path.join(app.getAppPath(), 'backup')
-})
-
+    return path.join(app.getAppPath(), 'backup');
+});
